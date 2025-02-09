@@ -1,15 +1,37 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:section2/common/component/custom__Elevated_button.dart';
 import 'package:section2/common/component/custom_text_form_field.dart';
 import 'package:section2/common/const/colors.dart';
+import 'package:section2/common/const/data.dart';
 import 'package:section2/common/layout/default_layout.dart';
+import 'package:section2/common/view/root_tab.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  String username = '';
+  String password = '';
 
   @override
   Widget build(BuildContext context) {
     final GlobalKey<FormState> formKey = GlobalKey();
+    final dio = Dio();
+
+    //localhost
+    final emulatorIp = '10.0.2.2:3000';
+    final simulatorIp = '127.0.0.1:3000';
+
+    final ip = Platform.isIOS ? simulatorIp : emulatorIp;
 
     return DefaultLayout(
       child: SingleChildScrollView(
@@ -32,19 +54,56 @@ class LoginScreen extends StatelessWidget {
                 //입력 폼
                 _form(
                   formKey: formKey,
+                  onIdChanged: (value) {
+                    username = value;
+                  },
+                  onPwChanged: (value) {
+                    password = value;
+                  },
                 ),
                 SizedBox(
                   height: 30,
                 ),
                 CustomElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final rawString = '$username:$password';
+                    Codec<String, String> stringToBase64 = utf8.fuse(base64);
+                    String token = stringToBase64.encode(rawString);
+
+                    final res = await dio.post(
+                      'http://$ip/auth/login',
+                      options:
+                          Options(headers: {'authorization': 'Basic ${token}'}),
+                    );
+
+                    final refreshToken = res.data['refreshToken'];
+                    final accessToken = res.data['accessToken'];
+                    storage.write(key: REFRESH_TOKEN_KEY, value: refreshToken);
+                    storage.write(key: ACCESS_TOKEN_KEY, value: accessToken);
+
+                    //로그인 성공 시
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RootTab(),
+                      ),
+                    );
+                  },
                   title: '로그인',
                 ),
                 SizedBox(
                   height: 8,
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final refreshToken =
+                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RAY29kZWZhY3RvcnkuYWkiLCJzdWIiOiJmNTViMzJkMi00ZDY4LTRjMWUtYTNjYS1kYTlkN2QwZDkyZTUiLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTczOTAzMTAzOCwiZXhwIjoxNzM5MTE3NDM4fQ.zXEZe_4zMkxO0_kpBSFSFR6AtElFMI6qRM4atpLFW9g';
+                    final res = await dio.post(
+                      'http://$ip/auth/token',
+                      options: Options(
+                          headers: {'authorization': 'Bearer ${refreshToken}'}),
+                    );
+                    print(res.data);
+                  },
                   style: TextButton.styleFrom(
                     foregroundColor: PRIMARY_COLOR,
                     shape: RoundedRectangleBorder(
@@ -72,15 +131,15 @@ class LoginScreen extends StatelessWidget {
   //입력폼
   Widget _form({
     required GlobalKey<FormState> formKey,
+    required ValueChanged<String>? onIdChanged,
+    required ValueChanged<String>? onPwChanged,
   }) {
     return Form(
       child: Column(
         children: [
           CustomTextFormField(
             hintText: '이메일을 입력해주세요',
-            onChanged: (value) {
-              print('이메일 : $value');
-            },
+            onChanged: onIdChanged,
           ),
           const SizedBox(
             height: 8,
@@ -88,9 +147,7 @@ class LoginScreen extends StatelessWidget {
           CustomTextFormField(
             hintText: '비밀번호를 입력해주세요',
             obscureText: true,
-            onChanged: (value) {
-              print('비밀번호 : $value');
-            },
+            onChanged: onPwChanged,
           ),
         ],
       ),
