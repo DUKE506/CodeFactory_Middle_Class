@@ -1,9 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:section2/common/const/colors.dart';
 import 'package:section2/common/const/data.dart';
+import 'package:section2/common/dio/dio.dart';
 import 'package:section2/common/layout/default_layout.dart';
+import 'package:section2/product/component/product_card.dart';
+import 'package:section2/product/model/product_model.dart';
 import 'package:section2/restaurant/component/restaurant_card.dart';
+import 'package:section2/restaurant/model/restaurant_detail_model.dart';
 import 'package:section2/restaurant/model/restaurant_model.dart';
+import 'package:section2/restaurant/repository/restaurant_repository.dart';
 
 class RestaurantDetailScreen extends StatelessWidget {
   final String restaurantId;
@@ -15,58 +21,124 @@ class RestaurantDetailScreen extends StatelessWidget {
     required this.restaurantName,
   });
 
-  Future restaurantProducts() async {
+  //상세 정보 조회 API
+  Future<RestaurantDetailModel> getRestaurantProducts() async {
     final dio = Dio();
 
-    final accessToken = await storage.read(key: ACCESS_TOKEN_KEY);
+    dio.interceptors.add(CustomInterceptor(storage: storage));
 
-    final res = await dio.get(
-      'http://$ip/restaurant/${restaurantId}',
-      options: Options(
-        headers: {'authorization': 'Bearer $accessToken'},
-      ),
-    );
+    final repository =
+        RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant');
 
-    print(res.data);
+    return repository.getRestaurantDetail(id: restaurantId);
 
-    return res.data;
+    // final accessToken = await storage.read(key: ACCESS_TOKEN_KEY);
+
+    // final res = await dio.get(
+    //   'http://$ip/restaurant/${restaurantId}',
+    //   options: Options(
+    //     headers: {'authorization': 'Bearer $accessToken'},
+    //   ),
+    // );
+    // return res.data;
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultLayout(
-      title: restaurantName,
-      child: FutureBuilder(
-          future: restaurantProducts(),
-          builder: (context, snapshot) {
-            print(snapshot.error);
-            if (!snapshot.hasData) {
-              print('없음');
-              return Container();
-            }
+        title: restaurantName,
+        floatingActionButton: _FloatingActionButton(),
+        child: FutureBuilder<RestaurantDetailModel>(
+            future: getRestaurantProducts(),
+            builder: (context, AsyncSnapshot<RestaurantDetailModel> snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(snapshot.error.toString()),
+                );
+              }
+              if (!snapshot.hasData &&
+                  snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
 
-            final detailRestaurant = snapshot.data!;
+              if (!snapshot.hasData) {
+                return Container();
+              }
 
-            return Column(
-              children: [
-                RestaurantCard(
-                  image: Image.network(
-                      'http://$ip${detailRestaurant['thumbUrl']}'),
-                  name: detailRestaurant['name'],
-                  tags: List.from(detailRestaurant['tags']),
-                  ratingsCount: detailRestaurant['ratingsCount'],
-                  deliveryTime: detailRestaurant['deliveryTime'],
-                  deliveryFee: detailRestaurant['deliveryFee'],
-                  ratings: detailRestaurant['ratings'],
-                  isDetail: true,
-                  detail: detailRestaurant['detail'],
-                ),
-                Column(
-                  children: [],
-                )
-              ],
+              // final item = RestaurantDetailModel.fromJson(snapshot.data!);
+
+              return CustomScrollView(
+                slivers: [
+                  renderTop(model: snapshot.data!),
+                  renderLabel(),
+                  renderProduct(products: snapshot.data!.products),
+                ],
+              );
+            }));
+  }
+
+  //
+  FloatingActionButton _FloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: () {},
+      child: Icon(
+        Icons.shopping_basket_outlined,
+        color: Colors.white,
+      ),
+      shape: CircleBorder(),
+      backgroundColor: PRIMARY_COLOR,
+    );
+  }
+
+  //가게 정보
+  SliverToBoxAdapter renderTop({
+    required RestaurantDetailModel model,
+  }) {
+    return SliverToBoxAdapter(
+      child: RestaurantCard.fromModel(
+        model: model,
+        isDetail: true,
+      ),
+    );
+  }
+
+  //가게 메뉴 리스트
+  SliverPadding renderProduct({
+    required List<RestaurantProductModel> products,
+  }) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final model = products[index];
+            return Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: ProductCard.fromModel(
+                model: model,
+              ),
             );
-          }),
+          },
+          childCount: products.length,
+        ),
+      ),
+    );
+  }
+
+  SliverPadding renderLabel() {
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: 16.0),
+      sliver: SliverToBoxAdapter(
+        child: Text(
+          '메뉴',
+          style: TextStyle(
+            fontSize: 16.0,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 }
