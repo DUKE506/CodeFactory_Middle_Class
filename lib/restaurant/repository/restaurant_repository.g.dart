@@ -22,11 +22,51 @@ class _RestaurantRepository implements RestaurantRepository {
   // final ParseErrorLogger? errorLogger;
 
   @override
+  Future<CursorPagenation<RestaurantModel>> pagenate() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{r'accessToekn': 'true'};
+    _headers.removeWhere((k, v) => v == null);
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<CursorPagenation<RestaurantModel>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+        .compose(
+          _dio.options,
+          '/',
+          queryParameters: queryParameters,
+          data: _data,
+        )
+        .copyWith(
+            baseUrl: _combineBaseUrls(
+          _dio.options.baseUrl,
+          baseUrl,
+        )));
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late CursorPagenation<RestaurantModel> _value;
+    try {
+      _value = CursorPagenation<RestaurantModel>.fromJson(
+        _result.data!,
+        (json) => RestaurantModel.fromJson(json as Map<String, dynamic>),
+      );
+    } on Object catch (e, s) {
+      // errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<RestaurantDetailModel> getRestaurantDetail(
       {required String id}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
-    final _headers = <String, dynamic>{r'accessToken': 'true'};
+    final _headers = <String, dynamic>{
+      r'accessToken': 'true',
+      r'refreshToken': 'true',
+    };
     _headers.removeWhere((k, v) => v == null);
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<RestaurantDetailModel>(Options(

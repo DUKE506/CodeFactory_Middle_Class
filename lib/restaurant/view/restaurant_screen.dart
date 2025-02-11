@@ -3,27 +3,25 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:section2/common/const/data.dart';
+import 'package:section2/common/dio/dio.dart';
 import 'package:section2/restaurant/component/restaurant_card.dart';
 import 'package:section2/restaurant/model/restaurant_model.dart';
+import 'package:section2/restaurant/repository/restaurant_repository.dart';
 import 'package:section2/restaurant/view/restaurant_detail_screen.dart';
 
 class RestaurantScreen extends StatelessWidget {
   const RestaurantScreen({super.key});
 
-  Future<List> pagenateRestaurant() async {
+  Future<List<RestaurantModel>> pagenateRestaurant() async {
     final dio = Dio();
 
-    final accessToken = await storage.read(key: ACCESS_TOKEN_KEY);
+    dio.interceptors.add(CustomInterceptor(storage: storage));
 
-    final res = await dio.get(
-      'http://$ip/restaurant',
-      options: Options(
-        headers: {
-          'authorization': 'Bearer $accessToken',
-        },
-      ),
-    );
-    return res.data['data'];
+    final res =
+        await RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant')
+            .pagenate();
+
+    return res.data;
   }
 
   @override
@@ -31,9 +29,9 @@ class RestaurantScreen extends StatelessWidget {
     return Container(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: FutureBuilder<List>(
+        child: FutureBuilder<List<RestaurantModel>>(
           future: pagenateRestaurant(),
-          builder: (context, snapshot) {
+          builder: (context, AsyncSnapshot<List<RestaurantModel>> snapshot) {
             //데이터 조회중인 경우
             if (!snapshot.hasData &&
                 snapshot.connectionState == ConnectionState.waiting) {
@@ -48,8 +46,8 @@ class RestaurantScreen extends StatelessWidget {
             return ListView.separated(
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
-                final item = snapshot.data![index];
-                final pItem = RestaurantModel.fromJson(item);
+                final pItem = snapshot.data![index];
+
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {

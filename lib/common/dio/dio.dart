@@ -43,23 +43,27 @@ class CustomInterceptor extends Interceptor {
   /// 2) 응답 받을 때
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    // TODO: implement onResponse
+    print(
+        '[RES] [${response.requestOptions.method}] ${response.requestOptions.uri}');
+
     super.onResponse(response, handler);
   }
 
   /// 3) 에러 났을 때
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     // 401에러 났을 때 (status code)
     // 토큰을 재발급 받는 시도를하고 토큰이 재발급되면
     // 다시 새로운 토큰을 요청한다.
 
-    print('[ERROR] [${err.requestOptions.method}] $err.requestOptions.uri}');
+    print('[ERROR] [${err.requestOptions.method}] ${err.requestOptions.uri}');
+    print('[ERROR] [MESSAGE] ${err.message}');
 
     // refreshToken이 없는 경우
-    final refreshToken = storage.read(key: REFRESH_TOKEN_KEY);
+    final refreshToken = await storage.read(key: REFRESH_TOKEN_KEY);
     if (refreshToken == null) {
       // 에러 던질때는 handler.reject()사용
+
       return handler.reject(err);
     }
 
@@ -68,10 +72,37 @@ class CustomInterceptor extends Interceptor {
 
     if (isStatus401 && !isPathRefresh) {
       final dio = Dio();
-      // final res = await dio.post(path)
+
+      try {
+        final res = await dio.post(
+          'http://$ip/auth/token',
+          options: Options(
+            headers: {
+              'authorization': 'Bearer $refreshToken',
+            },
+          ),
+        );
+
+        final accessToken = res.data['accessToken'];
+
+        final options = err.requestOptions;
+
+        //기존 토큰 변경
+        options.headers.addAll({
+          'authorization': 'Bearer $accessToken',
+        });
+
+        await storage.write(key: ACCESS_TOKEN_KEY, value: accessToken);
+
+        // 에러난 요청options에 토큰값을 신규로 변경하여 재전송
+        final resending = await dio.fetch(options);
+
+        return handler.resolve(resending);
+      } on DioException catch (e) {
+        return handler.reject(e);
+      }
     }
 
-    // return handler.resolve(response);
-    super.onError(err, handler);
+    return handler.reject(err);
   }
 }
