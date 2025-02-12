@@ -1,6 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:section2/common/const/data.dart';
+import 'package:section2/secure_storage/secure_storage_provider.dart';
+
+part 'dio.g.dart';
+
+@riverpod
+Dio dioState(ref) {
+  final dio = Dio();
+
+  final storage = ref.watch(secureStorageStateProvider);
+
+  dio.interceptors.add(CustomInterceptor(storage: storage));
+
+  return dio;
+}
 
 class CustomInterceptor extends Interceptor {
   final FlutterSecureStorage storage;

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:section2/common/const/colors.dart';
 import 'package:section2/common/const/data.dart';
 import 'package:section2/common/dio/dio.dart';
@@ -11,7 +12,7 @@ import 'package:section2/restaurant/model/restaurant_detail_model.dart';
 import 'package:section2/restaurant/model/restaurant_model.dart';
 import 'package:section2/restaurant/repository/restaurant_repository.dart';
 
-class RestaurantDetailScreen extends StatelessWidget {
+class RestaurantDetailScreen extends ConsumerWidget {
   final String restaurantId;
   final String restaurantName;
 
@@ -22,10 +23,8 @@ class RestaurantDetailScreen extends StatelessWidget {
   });
 
   //상세 정보 조회 API
-  Future<RestaurantDetailModel> getRestaurantProducts() async {
-    final dio = Dio();
-
-    dio.interceptors.add(CustomInterceptor(storage: storage));
+  Future<RestaurantDetailModel> getRestaurantProducts(WidgetRef ref) async {
+    final dio = ref.read(dioStateProvider);
 
     final repository =
         RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant');
@@ -34,12 +33,12 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DefaultLayout(
         title: restaurantName,
         floatingActionButton: _FloatingActionButton(),
         child: FutureBuilder<RestaurantDetailModel>(
-            future: getRestaurantProducts(),
+            future: getRestaurantProducts(ref),
             builder: (context, AsyncSnapshot<RestaurantDetailModel> snapshot) {
               if (snapshot.hasError) {
                 return Center(
