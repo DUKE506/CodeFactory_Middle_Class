@@ -14,14 +14,14 @@ abstract class RestaurantRepository {
 
   @GET('/')
   @Headers({
-    'accessToekn': 'true',
+    'accessToken': 'true',
   })
   Future<CursorPagenation<RestaurantModel>> pagenate();
 
   @GET('/{id}')
   @Headers({
     'accessToken': 'true',
-    'refreshToken': 'true',
+    // 'refreshToken': 'true',
   })
   Future<RestaurantDetailModel> getRestaurantDetail({
     @Path() required String id,

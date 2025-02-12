@@ -15,10 +15,6 @@ class RestaurantScreen extends ConsumerWidget {
 
   Future<List<RestaurantModel>> pagenateRestaurant(WidgetRef ref) async {
     final dio = ref.read(dioStateProvider);
-    // final dio = Dio();
-
-    // dio.interceptors.add(CustomInterceptor(storage: storage));
-
     final res =
         await RestaurantRepository(dio, baseUrl: 'http://$ip/restaurant')
             .pagenate();

@@ -76,18 +76,21 @@ class CustomInterceptor extends Interceptor {
 
     // refreshToken이 없는 경우
     final refreshToken = await storage.read(key: REFRESH_TOKEN_KEY);
+    final oldAccessToken = await storage.read(key: ACCESS_TOKEN_KEY);
+
     if (refreshToken == null) {
+      print('refresh Token 없음');
       // 에러 던질때는 handler.reject()사용
 
       return handler.reject(err);
     }
-
     final isStatus401 = err.response?.statusCode == 401;
     final isPathRefresh = err.requestOptions.path == '/auth/token';
 
     if (isStatus401 && !isPathRefresh) {
+      print('토큰 재발급 시작');
       final dio = Dio();
-
+      print('기존 Refresh Token : $refreshToken');
       try {
         final res = await dio.post(
           'http://$ip/auth/token',
@@ -97,8 +100,9 @@ class CustomInterceptor extends Interceptor {
             },
           ),
         );
-
+        print('기존존 accessToken : $oldAccessToken');
         final accessToken = res.data['accessToken'];
+        print('신규 accessToken : $accessToken');
 
         final options = err.requestOptions;
 

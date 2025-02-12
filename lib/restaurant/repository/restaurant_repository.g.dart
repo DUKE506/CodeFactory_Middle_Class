@@ -25,7 +25,7 @@ class _RestaurantRepository implements RestaurantRepository {
   Future<CursorPagenation<RestaurantModel>> pagenate() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
-    final _headers = <String, dynamic>{r'accessToekn': 'true'};
+    final _headers = <String, dynamic>{r'accessToken': 'true'};
     _headers.removeWhere((k, v) => v == null);
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<CursorPagenation<RestaurantModel>>(Options(
@@ -63,10 +63,7 @@ class _RestaurantRepository implements RestaurantRepository {
       {required String id}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
-    final _headers = <String, dynamic>{
-      r'accessToken': 'true',
-      r'refreshToken': 'true',
-    };
+    final _headers = <String, dynamic>{r'accessToken': 'true'};
     _headers.removeWhere((k, v) => v == null);
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<RestaurantDetailModel>(Options(
