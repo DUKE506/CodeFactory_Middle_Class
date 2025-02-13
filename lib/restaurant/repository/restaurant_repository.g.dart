@@ -22,9 +22,12 @@ class _RestaurantRepository implements RestaurantRepository {
   // final ParseErrorLogger? errorLogger;
 
   @override
-  Future<CursorPagenation<RestaurantModel>> pagenate() async {
+  Future<CursorPagenation<RestaurantModel>> pagenate(
+      {PaginationParams? paginationParams = const PaginationParams()}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
+    queryParameters.addAll(paginationParams?.toJson() ?? <String, dynamic>{});
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{r'accessToken': 'true'};
     _headers.removeWhere((k, v) => v == null);
     const Map<String, dynamic>? _data = null;
@@ -123,3 +126,29 @@ class _RestaurantRepository implements RestaurantRepository {
     return Uri.parse(dioBaseUrl).resolveUri(url).toString();
   }
 }
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$restaurantRepositoryHash() =>
+    r'80de6d4f5ae880192f41308282a5bcc382911027';
+
+/// See also [restaurantRepository].
+@ProviderFor(restaurantRepository)
+final restaurantRepositoryProvider =
+    AutoDisposeProvider<RestaurantRepository>.internal(
+  restaurantRepository,
+  name: r'restaurantRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$restaurantRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RestaurantRepositoryRef = AutoDisposeProviderRef<RestaurantRepository>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
